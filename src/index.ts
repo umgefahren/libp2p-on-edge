@@ -75,10 +75,10 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 			// ping: ping({
 			// 	maxOutboundStreams: 0,
 			// }),
-			dht: kadDHT({
-				protocol: '/ipfs/kad/1.0.0',
-				peerInfoMapper: removePrivateAddressesMapper,
-			}),
+			// dht: kadDHT({
+			// 	protocol: '/ipfs/kad/1.0.0',
+			// 	peerInfoMapper: removePrivateAddressesMapper,
+			// }),
 		},
 	});
 
