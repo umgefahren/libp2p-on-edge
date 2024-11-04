@@ -57,7 +57,6 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 			noise({
 				staticNoiseKey: new Uint8Array(32),
 				// staticNoiseKey: base64ToUint8Array(env.SECRET_KEY_SEED),
-				extensions,
 			}),
 		],
 		streamMuxers: [yamux()],
