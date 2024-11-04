@@ -61,7 +61,8 @@ export class WsListener extends TypedEventEmitter<ListenerEvents> implements Lis
 				server.close();
 				return Promise.resolve();
 			},
-			abort: function (_err: Error): void {
+			abort: function (err: Error): void {
+				console.error(err);
 				server.close();
 			},
 			remoteAddr: this.remoteMultiaddr,
