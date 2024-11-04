@@ -27,8 +27,6 @@ enabled = true
 
 [vars]
 DEBUG="libp2p:*"
-
-[env.production.vars]
 WORKER_MULTIADDR="/dns/libp2p-on-edge.dione.network/tcp/443/wss"
 
 # Bind the Workers AI model catalog. Run machine learning models, powered by serverless GPUs, on Cloudflare’s global network
