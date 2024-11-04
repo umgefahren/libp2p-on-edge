@@ -23,6 +23,12 @@ importers:
       '@libp2p/interface':
         specifier: ^2.2.0
         version: 2.2.0
+      '@libp2p/kad-dht':
+        specifier: ^14.1.0
+        version: 14.1.0
+      '@libp2p/peer-store':
+        specifier: ^11.0.10
+        version: 11.0.10
       '@libp2p/ping':
         specifier: ^2.0.10
         version: 2.0.10
@@ -41,6 +47,15 @@ importers:
       '@multiformats/multiaddr-to-uri':
         specifier: ^10.1.2
         version: 10.1.2
+      datastore-core:
+        specifier: ^10.0.2
+        version: 10.0.2
+      interface-datastore:
+        specifier: ^8.3.1
+        version: 8.3.1
+      interface-store:
+        specifier: ^6.0.2
+        version: 6.0.2
       it-stream-types:
         specifier: ^2.0.2
         version: 2.0.2
@@ -478,6 +493,9 @@ packages:
   '@libp2p/interface@2.2.0':
     resolution: {integrity: sha512-Pn3P5ixDggBjDyuULT0GvwdgD3JA426OqZ0e521mI7ysS+/M9Z9fp4Qcy8JrkJ45bLmIi9cgrNrefuU/Zu+bAQ==}
 
+  '@libp2p/kad-dht@14.1.0':
+    resolution: {integrity: sha512-baP0nOKobK93SHVxWmLxsqMQFRPZsa8n0ZlHdqhPfhlp1KT9fcmPZNLDTqYVytQvq/GSkn2i/eM7PyLsP8RKyg==}
+
   '@libp2p/logger@5.1.3':
     resolution: {integrity: sha512-NUVWEWGbXlBDgDE5ntdm51+ZICmaKYI8mor6KrlPeB1WXDyIFxRWIBw6uzt+HgprQJWzLTojeUEGv6OPsj95Dg==}
 
@@ -498,6 +516,9 @@ packages:
 
   '@libp2p/ping@2.0.10':
     resolution: {integrity: sha512-TfeCyaq2JRwEBGsfE7HlY2ZbOr7mglTp6D/i05JEZrQ+fbpW7ZZs/BMwC/p7jhvuvYGnWyl/F8ih/UBiPExtZQ==}
+
+  '@libp2p/record@4.0.4':
+    resolution: {integrity: sha512-wEEeHXGNIcc8HtGbgGMuSHbboUWMxKG7OxALFwkE+KACgfRJZTESOp6XIdZnyC0r9lfEFsjF01pFKBTzoBmWEQ==}
 
   '@libp2p/utils@6.1.3':
     resolution: {integrity: sha512-n1D6phOXGkqE3tuvmZwm5gaHKcGanlKwCWEBlrZqx9SSCyd5U5C58BcyQ8YH5/nb4kYMI7HyjomfQAVs2S2R9Q==}
@@ -927,6 +948,9 @@ packages:
     resolution: {integrity: sha512-kx2UTJuy7/lsT3QUzf50NjfxU1Z4P4wlvYp6YnR5Nc61P8XKfy+QtiJi1VLojA+Kea7vMbB4002rIij1Ol9hcw==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
 
+  it-length@3.0.6:
+    resolution: {integrity: sha512-R7bxHAzpRzYz7vghc2DDH7x4KXvEkeLfN/h316++jzbkEHIRXbEPLbE20p5yrqqBdOeK6/FRUDuHlTJ0H1hysw==}
+
   it-map@3.1.1:
     resolution: {integrity: sha512-9bCSwKD1yN1wCOgJ9UOl+46NQtdatosPWzxxUk2NdTLwRPXLh+L7iwCC9QKsbgM60RQxT/nH8bKMqm3H/o8IHQ==}
 
@@ -1065,6 +1089,10 @@ packages:
   p-defer@4.0.1:
     resolution: {integrity: sha512-Mr5KC5efvAK5VUptYEIopP1bakB85k2IWXaRC0rsh1uwn1L6M0LVml8OIQ4Gudg4oyZakf7FmeRLkMMtZW1i5A==}
     engines: {node: '>=12'}
+
+  p-event@6.0.1:
+    resolution: {integrity: sha512-Q6Bekk5wpzW5qIyUP4gdMEujObYstZl6DMMOSenwBvV0BlE5LkDwkjs5yHbZmdCEq2o4RJx4tE1vwxFVf2FG1w==}
+    engines: {node: '>=16.17'}
 
   p-queue@8.0.1:
     resolution: {integrity: sha512-NXzu9aQJTAzbBqOt2hwsR63ea7yvxJc0PwN/zobNAudYfb1B7R08SzB4TsLeSbUCuG467NhnoT0oO6w1qRO+BA==}
@@ -1708,6 +1736,38 @@ snapshots:
       progress-events: 1.0.1
       uint8arraylist: 2.4.8
 
+  '@libp2p/kad-dht@14.1.0':
+    dependencies:
+      '@libp2p/crypto': 5.0.6
+      '@libp2p/interface': 2.2.0
+      '@libp2p/interface-internal': 2.0.10
+      '@libp2p/peer-collections': 6.0.10
+      '@libp2p/peer-id': 5.0.7
+      '@libp2p/record': 4.0.4
+      '@libp2p/utils': 6.1.3
+      '@multiformats/multiaddr': 12.3.1
+      any-signal: 4.1.1
+      interface-datastore: 8.3.1
+      it-drain: 3.0.7
+      it-length: 3.0.6
+      it-length-prefixed: 9.1.0
+      it-map: 3.1.1
+      it-merge: 3.0.5
+      it-parallel: 3.0.8
+      it-pipe: 3.0.1
+      it-protobuf-stream: 1.1.5
+      it-take: 3.0.6
+      mortice: 3.0.6
+      multiformats: 13.3.1
+      p-defer: 4.0.1
+      p-event: 6.0.1
+      progress-events: 1.0.1
+      protons-runtime: 5.5.0
+      race-signal: 1.1.0
+      uint8-varint: 2.0.4
+      uint8arraylist: 2.4.8
+      uint8arrays: 5.1.0
+
   '@libp2p/logger@5.1.3':
     dependencies:
       '@libp2p/interface': 2.2.0
@@ -1777,6 +1837,12 @@ snapshots:
       '@libp2p/interface-internal': 2.0.10
       '@multiformats/multiaddr': 12.3.1
       it-byte-stream: 1.1.0
+      uint8arrays: 5.1.0
+
+  '@libp2p/record@4.0.4':
+    dependencies:
+      protons-runtime: 5.5.0
+      uint8arraylist: 2.4.8
       uint8arrays: 5.1.0
 
   '@libp2p/utils@6.1.3':
@@ -2274,6 +2340,8 @@ snapshots:
       uint8arraylist: 2.4.8
       uint8arrays: 5.1.0
 
+  it-length@3.0.6: {}
+
   it-map@3.1.1:
     dependencies:
       it-peekable: 3.0.5
@@ -2445,6 +2513,10 @@ snapshots:
       mimic-fn: 4.0.0
 
   p-defer@4.0.1: {}
+
+  p-event@6.0.1:
+    dependencies:
+      p-timeout: 6.1.3
 
   p-queue@8.0.1:
     dependencies:

@@ -16,14 +16,20 @@ import { noise } from '@chainsafe/libp2p-noise';
 import { webSockets } from './transport';
 import { yamux } from '@chainsafe/libp2p-yamux';
 import { bootstrap } from '@libp2p/bootstrap';
-import { Logger } from '@libp2p/interface';
 import { identify } from '@libp2p/identify';
 import { ping } from '@libp2p/ping';
+import { kadDHT, removePrivateAddressesMapper } from '@libp2p/kad-dht';
+import { createDatastore } from './db/datastore';
 
 const bootstrapMultiaddrs = [
 	'/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
 	'/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
 ];
+
+function base64ToUint8Array(base64: string): Uint8Array {
+	const binString = atob(base64);
+	return new Uint8Array(binString.length).map((_, i) => binString.charCodeAt(i));
+}
 
 async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const webSocketPair = new WebSocketPair();
@@ -33,10 +39,9 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 	server.accept();
 
 	const url = new URL(request.url);
-	console.log(url);
 
-	// localStorage.setItem('debug', 'libp2p:*');
 	const node = await createLibp2p({
+		datastore: createDatastore(env.libp2p_on_edge),
 		start: false,
 		addresses: {
 			listen: [env.WORKER_MULTIADDR],
@@ -45,12 +50,12 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 			webSockets({
 				server,
 				remoteAddr: request.headers.get('CF-Connecting-IP') ?? '127.0.0.1',
-				workerDomain: new URL(request.url).hostname,
+				workerMultiaddr: env.WORKER_MULTIADDR,
 			}),
 		],
 		connectionEncrypters: [
 			noise({
-				staticNoiseKey: new Uint8Array(32), // TODO: Generate a real key
+				staticNoiseKey: base64ToUint8Array(env.SECRET_KEY_SEED),
 			}),
 		],
 		streamMuxers: [yamux()],
@@ -73,6 +78,10 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		services: {
 			identify: identify(),
 			ping: ping(),
+			dht: kadDHT({
+				protocol: '/ipfs/kad/1.0.0',
+				peerInfoMapper: removePrivateAddressesMapper,
+			}),
 		},
 	});
 

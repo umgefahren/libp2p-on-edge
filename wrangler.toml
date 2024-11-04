@@ -82,6 +82,11 @@ WORKER_MULTIADDR="/ip4/127.0.0.1/tcp/8787/ws"
 # binding = "MY_KV_NAMESPACE"
 # id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
+
+[[kv_namespaces]]
+binding = "libp2p_on_edge"
+id = "4e3b139dc90e4d16aa3fd72ee307dd4d"
+
 # Bind an mTLS certificate. Use to present a client certificate when communicating with another service.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#mtls-certificates
 # [[mtls_certificates]]
