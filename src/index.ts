@@ -61,9 +61,9 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		],
 		streamMuxers: [yamux()],
 		peerDiscovery: [
-			bootstrap({
-				list: bootstrapMultiaddrs,
-			}),
+			// bootstrap({
+			// 	list: bootstrapMultiaddrs,
+			// }),
 		],
 		logger: {
 			forComponent(name) {
@@ -76,7 +76,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 			},
 		},
 		services: {
-			identify: identify({}),
+			identify: identify(),
 			ping: ping({
 				// maxOutboundStreams: 0,
 			}),
