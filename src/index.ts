@@ -28,7 +28,7 @@ const bootstrapMultiaddrs = [
 
 function base64ToUint8Array(base64: string): Uint8Array {
 	const binString = atob(base64);
-	return new Uint8Array(binString.length).map((_, i) => binString.charCodeAt(i));
+	return Uint8Array.from(binString, (char) => char.charCodeAt(0));
 }
 
 async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
