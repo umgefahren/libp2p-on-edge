@@ -59,11 +59,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 			}),
 		],
 		streamMuxers: [yamux()],
-		peerDiscovery: [
-			bootstrap({
-				list: bootstrapMultiaddrs,
-			}),
-		],
+		peerDiscovery: [],
 		logger: {
 			forComponent(name) {
 				console.log(name);
@@ -77,7 +73,10 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		},
 		services: {
 			identify: identify(),
-			ping: ping(),
+			ping: ping({
+				maxInboundStreams: 1,
+				maxOutboundStreams: 1,
+			}),
 			dht: kadDHT({
 				protocol: '/ipfs/kad/1.0.0',
 				peerInfoMapper: removePrivateAddressesMapper,
