@@ -63,7 +63,7 @@ export class CloudflareDatastore extends BaseDatastore {
 	}
 
 	override _all(q: Query, _options?: AbortOptions): AwaitIterable<Pair> {
-		console.log('doing an all');
+		console.log('doing an all', _options);
 		const self = this;
 		return {
 			[Symbol.asyncIterator]: async function* () {
