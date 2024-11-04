@@ -57,6 +57,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 			noise({
 				staticNoiseKey: new Uint8Array(32),
 				// staticNoiseKey: base64ToUint8Array(env.SECRET_KEY_SEED),
+				extensions,
 			}),
 		],
 		streamMuxers: [yamux()],
@@ -67,16 +68,16 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		],
 		logger: {
 			forComponent(name) {
-				const debug = (...args: any[]) => console.log(...args);
+				const debug = (...args: any[]) => console.log(name, ...args);
 				return Object.assign(debug, {
-					error: (...args: any[]) => console.error(...args),
-					trace: (...args: any[]) => {},
+					error: (...args: any[]) => console.error(name, ...args),
+					trace: (...args: any[]) => console.trace(name, ...args),
 					enabled: true,
 				});
 			},
 		},
 		services: {
-			identify: identify(),
+			identify: identify({}),
 			ping: ping({
 				// maxOutboundStreams: 0,
 			}),
