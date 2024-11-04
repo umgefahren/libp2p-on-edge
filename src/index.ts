@@ -73,8 +73,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		services: {
 			identify: identify(),
 			ping: ping({
-				maxInboundStreams: 1,
-				maxOutboundStreams: 1,
+				maxOutboundStreams: 0,
 			}),
 			dht: kadDHT({
 				protocol: '/ipfs/kad/1.0.0',
