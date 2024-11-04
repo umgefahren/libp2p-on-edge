@@ -54,7 +54,7 @@ export class CloudflareDatastore extends BaseDatastore {
 		return {
 			[Symbol.asyncIterator]: async function* () {
 				const offset = q.offset ? await self.getOffsetString(q) : undefined;
-				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit });
+				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit ?? 10 });
 				for (const key of keys) {
 					yield new Key(key.name);
 				}
@@ -67,12 +67,20 @@ export class CloudflareDatastore extends BaseDatastore {
 		const self = this;
 		return {
 			[Symbol.asyncIterator]: async function* () {
-				const offset = q.offset ? await self.getOffsetString(q) : undefined;
-				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit });
+				const offset = q.offset
+					? await self.getOffsetString({
+							prefix: q.prefix,
+							offset: q.offset,
+						})
+					: undefined;
+				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit ?? 10 });
+				let consumed = 0;
 				for (const key of keys) {
 					const value = await self.namespace.get(key.name, 'arrayBuffer');
 					if (value === null) continue;
 					yield { key: new Key(key.name), value: new Uint8Array(value) };
+					consumed++;
+					console.log('consumed', consumed);
 				}
 			},
 		};
