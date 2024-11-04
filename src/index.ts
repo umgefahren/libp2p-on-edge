@@ -20,6 +20,7 @@ import { identify } from '@libp2p/identify';
 import { ping } from '@libp2p/ping';
 import { kadDHT, removePrivateAddressesMapper } from '@libp2p/kad-dht';
 import { createDatastore } from './db/datastore';
+import { generateKeyPairFromSeed } from '@libp2p/crypto/keys';
 
 const bootstrapMultiaddrs = [
 	'/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
@@ -39,6 +40,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 	const url = new URL(request.url);
 
 	const node = await createLibp2p({
+		privateKey: await generateKeyPairFromSeed('Ed25519', base64ToUint8Array(env.SECRET_KEY_SEED)),
 		datastore: createDatastore(env.libp2p_on_edge),
 		start: false,
 		addresses: {
@@ -51,11 +53,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 				workerMultiaddr: env.WORKER_MULTIADDR,
 			}),
 		],
-		connectionEncrypters: [
-			noise({
-				staticNoiseKey: base64ToUint8Array(env.SECRET_KEY_SEED),
-			}),
-		],
+		connectionEncrypters: [noise()],
 		streamMuxers: [yamux()],
 		peerDiscovery: [
 			bootstrap({

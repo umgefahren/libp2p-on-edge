@@ -17,6 +17,9 @@ importers:
       '@libp2p/bootstrap':
         specifier: ^11.0.10
         version: 11.0.10
+      '@libp2p/crypto':
+        specifier: ^5.0.6
+        version: 5.0.6
       '@libp2p/identify':
         specifier: ^3.0.10
         version: 3.0.10
