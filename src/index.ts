@@ -36,8 +36,6 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 	const client = webSocketPair[0],
 		server = webSocketPair[1];
 
-	// server.accept();
-
 	const url = new URL(request.url);
 
 	const node = await createLibp2p({
@@ -55,8 +53,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		],
 		connectionEncrypters: [
 			noise({
-				staticNoiseKey: new Uint8Array(32),
-				// staticNoiseKey: base64ToUint8Array(env.SECRET_KEY_SEED),
+				staticNoiseKey: base64ToUint8Array(env.SECRET_KEY_SEED),
 			}),
 		],
 		streamMuxers: [yamux()],
@@ -77,13 +74,11 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		},
 		services: {
 			identify: identify(),
-			ping: ping({
-				// maxOutboundStreams: 0,
+			ping: ping(),
+			dht: kadDHT({
+				protocol: '/ipfs/kad/1.0.0',
+				peerInfoMapper: removePrivateAddressesMapper,
 			}),
-			// dht: kadDHT({
-			// 	protocol: '/ipfs/kad/1.0.0',
-			// 	peerInfoMapper: removePrivateAddressesMapper,
-			// }),
 		},
 	});
 
