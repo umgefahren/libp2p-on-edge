@@ -62,11 +62,10 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		peerDiscovery: [],
 		logger: {
 			forComponent(name) {
-				console.log(name);
 				const debug = (...args: any[]) => console.log(...args);
 				return Object.assign(debug, {
 					error: (...args: any[]) => console.error(...args),
-					trace: (...args: any[]) => console.trace(...args),
+					trace: (...args: any[]) => {},
 					enabled: true,
 				});
 			},
