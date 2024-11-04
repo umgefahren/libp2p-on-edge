@@ -92,7 +92,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 			console.log('Connected to %s', evt.detail.toString()); // Log connected peer
 		});
 		node.start();
-		console.log(node.getMultiaddrs());
+		console.log(`PeerID: ${node.peerId}`);
 		console.log('libp2p has started');
 
 		server.addEventListener('close', async () => {

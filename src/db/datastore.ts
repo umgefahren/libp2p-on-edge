@@ -54,7 +54,7 @@ export class CloudflareDatastore extends BaseDatastore {
 		return {
 			[Symbol.asyncIterator]: async function* () {
 				const offset = q.offset ? await self.getOffsetString(q) : undefined;
-				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit ?? 10 });
+				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit });
 				for (const key of keys) {
 					if (options?.signal?.aborted) {
 						break;
@@ -76,7 +76,7 @@ export class CloudflareDatastore extends BaseDatastore {
 							offset: q.offset,
 						})
 					: undefined;
-				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit ?? 10 });
+				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit });
 				let consumed = 0;
 				for (const key of keys) {
 					if (options?.signal?.aborted) {
