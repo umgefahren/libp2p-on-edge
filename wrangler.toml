@@ -27,7 +27,9 @@ enabled = true
 
 [vars]
 DEBUG="libp2p:*"
-WORKER_MULTIADDR="/ip4/127.0.0.1/tcp/8787/ws"
+
+[env.production.vars]
+WORKER_MULTIADDR="/dns/libp2p-on-edge.dione.network/tcp/443/wss"
 
 # Bind the Workers AI model catalog. Run machine learning models, powered by serverless GPUs, on Cloudflare’s global network
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#workers-ai
