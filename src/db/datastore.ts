@@ -48,22 +48,25 @@ export class CloudflareDatastore extends BaseDatastore {
 		}
 	}
 
-	override _allKeys(q: KeyQuery, _options?: AbortOptions): AwaitIterable<Key> {
-		console.log('doing an all keys');
+	override _allKeys(q: KeyQuery, options?: AbortOptions): AwaitIterable<Key> {
+		console.log('doing an all keys', options);
 		const self = this;
 		return {
 			[Symbol.asyncIterator]: async function* () {
 				const offset = q.offset ? await self.getOffsetString(q) : undefined;
 				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit ?? 10 });
 				for (const key of keys) {
+					if (options?.signal?.aborted) {
+						break;
+					}
 					yield new Key(key.name);
 				}
 			},
 		};
 	}
 
-	override _all(q: Query, _options?: AbortOptions): AwaitIterable<Pair> {
-		console.log('doing an all', _options);
+	override _all(q: Query, options?: AbortOptions): AwaitIterable<Pair> {
+		console.log('doing an all', options);
 		const self = this;
 		return {
 			[Symbol.asyncIterator]: async function* () {
@@ -76,6 +79,9 @@ export class CloudflareDatastore extends BaseDatastore {
 				const { keys } = await self.namespace.list({ prefix: q.prefix, cursor: offset, limit: q.limit ?? 10 });
 				let consumed = 0;
 				for (const key of keys) {
+					if (options?.signal?.aborted) {
+						break;
+					}
 					const value = await self.namespace.get(key.name, 'arrayBuffer');
 					if (value === null) continue;
 					yield { key: new Key(key.name), value: new Uint8Array(value) };

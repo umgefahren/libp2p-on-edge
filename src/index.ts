@@ -36,7 +36,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 	const client = webSocketPair[0],
 		server = webSocketPair[1];
 
-	server.accept();
+	// server.accept();
 
 	const url = new URL(request.url);
 
