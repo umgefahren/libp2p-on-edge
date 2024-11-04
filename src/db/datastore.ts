@@ -30,6 +30,7 @@ export class CloudflareDatastore extends BaseDatastore {
 	}
 
 	async getOffsetString(q: KeyQuery): Promise<string> {
+		console.log('doing an offset string');
 		let counter = 0;
 		let cursor = null;
 		while (true) {
@@ -48,6 +49,7 @@ export class CloudflareDatastore extends BaseDatastore {
 	}
 
 	override _allKeys(q: KeyQuery, _options?: AbortOptions): AwaitIterable<Key> {
+		console.log('doing an all keys');
 		const self = this;
 		return {
 			[Symbol.asyncIterator]: async function* () {
@@ -61,6 +63,7 @@ export class CloudflareDatastore extends BaseDatastore {
 	}
 
 	override _all(q: Query, _options?: AbortOptions): AwaitIterable<Pair> {
+		console.log('doing an all');
 		const self = this;
 		return {
 			[Symbol.asyncIterator]: async function* () {
