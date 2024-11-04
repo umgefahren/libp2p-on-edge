@@ -61,9 +61,9 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		],
 		streamMuxers: [yamux()],
 		peerDiscovery: [
-			// bootstrap({
-			// 	list: bootstrapMultiaddrs,
-			// }),
+			bootstrap({
+				list: bootstrapMultiaddrs,
+			}),
 		],
 		logger: {
 			forComponent(name) {
@@ -101,6 +101,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		console.log('libp2p has started');
 
 		server.addEventListener('close', async () => {
+			console.log('closed');
 			await node.stop();
 			console.log('libp2p has stopped');
 			resolve();
