@@ -41,7 +41,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 	const url = new URL(request.url);
 
 	const node = await createLibp2p({
-		// datastore: createDatastore(env.libp2p_on_edge),
+		datastore: createDatastore(env.libp2p_on_edge),
 		start: false,
 		addresses: {
 			listen: [env.WORKER_MULTIADDR],
