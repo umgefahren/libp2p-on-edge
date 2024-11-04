@@ -49,7 +49,7 @@ async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext
 		transports: [
 			webSockets({
 				server,
-				remoteAddr: request.headers.get('CF-Connecting-IP') ?? '127.0.0.1',
+				remoteAddr: request.headers.get('CF-Connecting-IP') ?? request.headers.get('x-real-ip') ?? '127.0.0.1',
 				workerMultiaddr: env.WORKER_MULTIADDR,
 			}),
 		],
