@@ -62,15 +62,12 @@ importers:
       it-stream-types:
         specifier: ^2.0.2
         version: 2.0.2
-      it-ws:
-        specifier: ^6.1.5
-        version: 6.1.5
+      itty-router:
+        specifier: ^5.0.18
+        version: 5.0.18
       libp2p:
         specifier: ^2.2.1
         version: 2.2.1
-      p-defer:
-        specifier: ^4.0.1
-        version: 4.0.1
       progress-events:
         specifier: ^1.0.1
         version: 1.0.1
@@ -999,6 +996,9 @@ packages:
   it-ws@6.1.5:
     resolution: {integrity: sha512-uWjMtpy5HqhSd/LlrlP3fhYrr7rUfJFFMABv0F5d6n13Q+0glhZthwUKpEAVhDrXY95Tb1RB5lLqqef+QbVNaw==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+
+  itty-router@5.0.18:
+    resolution: {integrity: sha512-mK3ReOt4ARAGy0V0J7uHmArG2USN2x0zprZ+u+YgmeRjXTDbaowDy3kPcsmQY6tH+uHhDgpWit9Vqmv/4rTXwA==}
 
   itty-time@1.0.6:
     resolution: {integrity: sha512-+P8IZaLLBtFv8hCkIjcymZOp4UJ+xW6bSlQsXGqrkmJh7vSiMFSlNne0mCYagEE0N7HDNR5jJBRxwN0oYv61Rw==}
@@ -2408,6 +2408,8 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  itty-router@5.0.18: {}
 
   itty-time@1.0.6: {}
 

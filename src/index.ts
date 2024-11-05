@@ -1,112 +1,83 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
-
-import { createLibp2p } from 'libp2p';
-import { noise } from '@chainsafe/libp2p-noise';
-import { webSockets } from './transport';
-import { yamux } from '@chainsafe/libp2p-yamux';
-import { bootstrap } from '@libp2p/bootstrap';
-import { identify } from '@libp2p/identify';
-import { ping } from '@libp2p/ping';
-import { kadDHT, removePrivateAddressesMapper } from '@libp2p/kad-dht';
-import { createDatastore } from './db/datastore';
-import { generateKeyPairFromSeed } from '@libp2p/crypto/keys';
-
-const bootstrapMultiaddrs = [
-	'/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
-	'/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
-];
-
-function base64ToUint8Array(base64: string): Uint8Array {
-	const binString = atob(base64);
-	return Uint8Array.from(binString, (char) => char.charCodeAt(0));
-}
+import { P2pStack } from './p2p';
+import { error, IRequestStrict, json, Router, withParams } from 'itty-router';
 
 async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const webSocketPair = new WebSocketPair();
 	const client = webSocketPair[0],
 		server = webSocketPair[1];
 
-	const url = new URL(request.url);
+	const p2pStack = await P2pStack.create(
+		env,
+		request.headers.get('CF-Connecting-IP') ?? request.headers.get('x-real-ip') ?? '127.0.0.1',
+		server,
+	);
 
-	const node = await createLibp2p({
-		privateKey: await generateKeyPairFromSeed('Ed25519', base64ToUint8Array(env.SECRET_KEY_SEED)),
-		datastore: createDatastore(env.libp2p_on_edge),
-		start: false,
-		addresses: {
-			listen: [env.WORKER_MULTIADDR],
-		},
-		transports: [
-			webSockets({
-				server,
-				remoteAddr: request.headers.get('CF-Connecting-IP') ?? request.headers.get('x-real-ip') ?? '127.0.0.1',
-				workerMultiaddr: env.WORKER_MULTIADDR,
-			}),
-		],
-		connectionEncrypters: [noise()],
-		streamMuxers: [yamux()],
-		peerDiscovery: [
-			bootstrap({
-				list: bootstrapMultiaddrs,
-			}),
-		],
-		logger: {
-			forComponent(name) {
-				const debug = (...args: any[]) => console.log(name, ...args);
-				return Object.assign(debug, {
-					error: (...args: any[]) => console.error(name, ...args),
-					trace: (...args: any[]) => console.trace(name, ...args),
-					enabled: true,
-				});
-			},
-		},
-		services: {
-			identify: identify(),
-			ping: ping(),
-			dht: kadDHT({
-				protocol: '/ipfs/kad/1.0.0',
-				peerInfoMapper: removePrivateAddressesMapper,
-			}),
-		},
-	});
-
-	const fut = new Promise<void>(async (resolve) => {
-		console.log('starting libp2p');
-		node.addEventListener('peer:discovery', (evt) => {
-			console.log('Discovered %s', evt.detail.id.toString()); // Log discovered peer
-		});
-
-		node.addEventListener('peer:connect', (evt) => {
-			console.log('Connected to %s', evt.detail.toString()); // Log connected peer
-		});
-		node.start();
-		console.log(`PeerID: ${node.peerId}`);
-		console.log('libp2p has started');
-
-		server.addEventListener('close', async () => {
-			console.log('closed');
-			await node.stop();
-			console.log('libp2p has stopped');
-			resolve();
-		});
-	});
-
-	ctx.waitUntil(fut);
+	ctx.waitUntil(p2pStack.start());
 
 	return new Response(null, {
 		status: 101,
 		webSocket: client,
 	});
+}
+
+type KadGetRequest = {
+	params: {
+		key: string;
+	};
+} & IRequestStrict;
+
+type KadPutRequest = {
+	params: {
+		key: string;
+	};
+	json: () => Promise<{ value: string }>;
+} & IRequestStrict;
+
+async function apiHandler(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+	if (request.method === 'GET' && request.url === '/ws') {
+		return handleWsRequest(request, env, ctx);
+	}
+
+	const router = Router({
+		before: [withParams],
+		catch: error,
+		finally: [json],
+	});
+
+	const getStack = async () => {
+		return await P2pStack.create(env, request.headers.get('CF-Connecting-IP') ?? request.headers.get('x-real-ip') ?? '127.0.0.1');
+	};
+
+	router
+		.get<KadGetRequest>('/api/v1/kad/:key', async ({ params: { key } }) => {
+			const stack = await getStack();
+			ctx.waitUntil(stack.start());
+			await stack.waitForStart();
+			const resp = await stack.kad.get(key);
+			return new Response(
+				JSON.stringify({
+					...resp,
+					value: new TextDecoder().decode(resp?.value),
+				}),
+			);
+		})
+		.put<KadPutRequest>('/api/v1/kad/:key', async ({ params: { key }, json }) => {
+			const { value } = await json();
+			const stack = await getStack();
+			ctx.waitUntil(stack.start());
+			await stack.waitForStart();
+			await stack.kad.put(key, new TextEncoder().encode(value));
+			return new Response();
+		})
+		.get('/api/v1/kad/closest/:key', async ({ params: { key } }) => {
+			const stack = await getStack();
+			ctx.waitUntil(stack.start());
+			await stack.waitForStart();
+			const resp = await stack.kad.closestPeers(key);
+			return new Response(JSON.stringify(resp));
+		});
+
+	return await router.fetch(request);
 }
 
 export default {
@@ -115,6 +86,6 @@ export default {
 		if (upgradeHeader === 'websocket') {
 			return handleWsRequest(request, env, ctx);
 		}
-		return new Response('Hello World!');
+		return await apiHandler(request, env, ctx);
 	},
 } satisfies ExportedHandler<Env>;

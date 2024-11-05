@@ -1,72 +1,10 @@
-/**
- * @packageDocumentation
- *
- * A [libp2p transport](https://docs.libp2p.io/concepts/transports/overview/) based on [WebSockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API).
- *
- * @example
- *
- * ```TypeScript
- * import { createLibp2p } from 'libp2p'
- * import { webSockets } from '@libp2p/websockets'
- * import { multiaddr } from '@multiformats/multiaddr'
- *
- * const node = await createLibp2p({
- *   transports: [
- *     webSockets()
- *   ]
- * //... other config
- * })
- * await node.start()
- *
- * const ma = multiaddr('/ip4/127.0.0.1/tcp/9090/ws')
- * await node.dial(ma)
- * ```
- *
- * ## Filters
- *
- * When run in a browser by default this module will only connect to secure web socket addresses.
- *
- * To change this you should pass a filter to the factory function.
- *
- * You can create your own address filters for this transports, or rely in the filters [provided](./src/filters.js).
- *
- * The available filters are:
- *
- * - `filters.all`
- *   - Returns all TCP and DNS based addresses, both with `ws` or `wss`.
- * - `filters.dnsWss`
- *   - Returns all DNS based addresses with `wss`.
- * - `filters.dnsWsOrWss`
- *   - Returns all DNS based addresses, both with `ws` or `wss`.
- *
- * @example Allow dialing insecure WebSockets
- *
- * ```TypeScript
- * import { createLibp2p } from 'libp2p'
- * import { webSockets } from '@libp2p/websockets'
- * import * as filters from '@libp2p/websockets/filters'
- *
- * const node = await createLibp2p({
- *   transports: [
- *     webSockets({
- *       // connect to all sockets, even insecure ones
- *       filter: filters.all
- *     })
- *   ]
- * })
- * ```
- */
-
 import { transportSymbol, serviceCapabilities, ConnectionFailedError } from '@libp2p/interface';
 import { multiaddrToUri as toUri } from '@multiformats/multiaddr-to-uri';
-import { connect, type WebSocketOptions } from 'it-ws/client';
-import pDefer from 'p-defer';
 import { CustomProgressEvent } from 'progress-events';
 import { raceSignal } from 'race-signal';
 import { isBrowser, isWebWorker } from 'wherearewe';
 import * as filters from './filters.js';
-import { createListener } from './listener.js';
-import { socketToMaConn } from './socket-to-conn.js';
+import { createListener, WsSource } from './listener.js';
 import type {
 	Transport,
 	MultiaddrFilter,
@@ -80,16 +18,19 @@ import type {
 	OutboundConnectionUpgradeEvents,
 	Metrics,
 	CounterGroup,
+	MultiaddrConnection,
 } from '@libp2p/interface';
 import type { Multiaddr } from '@multiformats/multiaddr';
-import type { DuplexWebSocket } from 'it-ws/duplex';
 import type { ProgressEvent } from 'progress-events';
 
-export interface WebSocketsInit extends AbortOptions, WebSocketOptions {
+export interface WebSocketsInit extends AbortOptions {
 	filter?: MultiaddrFilter;
-	server: WebSocket;
+	server?: WebSocket;
 	workerMultiaddr: string;
 	remoteAddr: string;
+	websocket?: {
+		protocol: string;
+	};
 }
 
 export interface WebSocketsComponents {
@@ -107,26 +48,16 @@ class WebSockets implements Transport<WebSocketsDialEvents> {
 	private readonly log: Logger;
 	private readonly init: WebSocketsInit;
 	private readonly logger: ComponentLogger;
-	private readonly metrics?: WebSocketsMetrics;
 	private readonly components: WebSocketsComponents;
 
 	constructor(components: WebSocketsComponents, init?: WebSocketsInit) {
-		this.log = components.logger.forComponent('libp2p:websockets');
-		this.logger = components.logger;
 		this.components = components;
-		if (init?.server == null) {
-			throw new Error('WebSockets transport requires a WebSocket server');
+		this.log = this.components.logger.forComponent('libp2p:websockets');
+		this.logger = this.components.logger;
+		if (init == null) {
+			throw new Error('missing init options');
 		}
 		this.init = init;
-
-		if (components.metrics != null) {
-			this.metrics = {
-				dialerEvents: components.metrics.registerCounterGroup('libp2p_websockets_dialer_events_total', {
-					label: 'event',
-					help: 'Total count of WebSockets dialer events by type',
-				}),
-			};
-		}
 	}
 
 	readonly [transportSymbol] = true;
@@ -138,55 +69,12 @@ class WebSockets implements Transport<WebSocketsDialEvents> {
 	async dial(ma: Multiaddr, options: DialTransportOptions<WebSocketsDialEvents>): Promise<Connection> {
 		this.log('dialing %s', ma);
 		options = options ?? {};
-
-		const socket = await this._connect(ma, options);
-		const maConn = socketToMaConn(socket, ma, {
-			logger: this.logger,
-			metrics: this.metrics?.dialerEvents,
-		});
+		const maConn = await createWebSocket(ma, this.init, this.log, options);
 		this.log('new outbound connection %s', maConn.remoteAddr);
 
 		const conn = await options.upgrader.upgradeOutbound(maConn, options);
 		this.log('outbound connection %s upgraded', maConn.remoteAddr);
 		return conn;
-	}
-
-	async _connect(ma: Multiaddr, options: DialTransportOptions<WebSocketsDialEvents>): Promise<DuplexWebSocket> {
-		options?.signal?.throwIfAborted();
-
-		const cOpts = ma.toOptions();
-		this.log('dialing %s:%s', cOpts.host, cOpts.port);
-
-		const errorPromise = pDefer();
-		const rawSocket = connect(toUri(ma), this.init);
-		rawSocket.socket.addEventListener('error', () => {
-			// the WebSocket.ErrorEvent type doesn't actually give us any useful
-			// information about what happened
-			// https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
-			const err = new ConnectionFailedError(`Could not connect to ${ma.toString()}`);
-			this.log.error('connection error:', err);
-			this.metrics?.dialerEvents.increment({ error: true });
-			errorPromise.reject(err);
-		});
-
-		try {
-			options.onProgress?.(new CustomProgressEvent('websockets:open-connection'));
-			await raceSignal(Promise.race([rawSocket.connected(), errorPromise.promise]), options.signal);
-		} catch (err: any) {
-			if (options.signal?.aborted === true) {
-				this.metrics?.dialerEvents.increment({ abort: true });
-			}
-
-			rawSocket.close().catch((err) => {
-				this.log.error('error closing raw socket', err);
-			});
-
-			throw err;
-		}
-
-		this.log('connected %s', ma);
-		this.metrics?.dialerEvents.increment({ connect: true });
-		return rawSocket;
 	}
 
 	/**
@@ -232,6 +120,69 @@ class WebSockets implements Transport<WebSocketsDialEvents> {
 	dialFilter(multiaddrs: Multiaddr[]): Multiaddr[] {
 		return this.listenFilter(multiaddrs);
 	}
+}
+
+async function createWebSocket(
+	ma: Multiaddr,
+	init: WebSocketsInit,
+	logger: Logger,
+	options: DialTransportOptions<WebSocketsDialEvents>,
+): Promise<MultiaddrConnection> {
+	const uri = toUri(ma);
+
+	const socket = new WebSocket(uri, init.websocket?.protocol);
+
+	const source = new WsSource(socket);
+
+	const errorPromise = new Promise((_resolve, reject) => {
+		socket.addEventListener('error', () => {
+			const err = new ConnectionFailedError(`Could not connect to ${ma.toString()}`);
+			logger.error('connection error:', err);
+			reject(err);
+		});
+	});
+
+	const connectedPromise = new Promise<void>((resolve) => {
+		socket.addEventListener('open', () => {
+			resolve();
+		});
+	});
+
+	try {
+		options.onProgress?.(new CustomProgressEvent('websockets:open-connection'));
+		await raceSignal(Promise.race([connectedPromise, errorPromise]), options.signal);
+	} catch (err: any) {
+		socket.close();
+
+		throw err;
+	}
+
+	return {
+		sink: async (source) => {
+			for await (const message of source) {
+				socket.send(message.slice());
+			}
+		},
+		source,
+		close: async () => {
+			if (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN) {
+				await new Promise<void>((resolve) => {
+					socket.addEventListener('close', () => {
+						resolve();
+					});
+					socket.close();
+				});
+			}
+		},
+		abort: () => {
+			socket.close();
+		},
+		remoteAddr: ma,
+		timeline: {
+			open: Date.now(),
+		},
+		log: logger,
+	};
 }
 
 export function webSockets(init: WebSocketsInit): (components: WebSocketsComponents) => Transport {

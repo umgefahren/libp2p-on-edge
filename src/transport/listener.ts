@@ -15,12 +15,12 @@ export interface WebSocketListenerComponents {
 	logger: ComponentLogger;
 }
 export interface WebSocketListenerInit extends CreateListenerOptions {
-	server: WebSocket;
+	server?: WebSocket;
 	remoteAddr: string;
 	workerMultiaddr: string;
 }
 
-class WsSource implements AsyncGenerator<Uint8Array> {
+export class WsSource implements AsyncGenerator<Uint8Array> {
 	constructor(private readonly socket: WebSocket) {}
 	next(...[_value]: [] | [any]): Promise<IteratorResult<Uint8Array, any>> {
 		return new Promise((resolve, _reject) => {
@@ -44,7 +44,7 @@ export class WsListener extends TypedEventEmitter<ListenerEvents> implements Lis
 	private readonly myMultiaddr: Multiaddr;
 	private readonly remoteAddr: string;
 	private readonly remoteMultiaddr: Multiaddr;
-	private readonly server: WebSocket;
+	private readonly server?: WebSocket;
 	private readonly log: Logger;
 
 	constructor(components: WebSocketListenerComponents, init: WebSocketListenerInit) {
@@ -56,66 +56,70 @@ export class WsListener extends TypedEventEmitter<ListenerEvents> implements Lis
 		this.server = server;
 		this.log = components.logger.forComponent('libp2p:websockets:listener');
 
-		const maConn: MultiaddrConnection = {
-			close: function (_options?: AbortOptions): Promise<void> {
-				server.close();
-				return Promise.resolve();
-			},
-			abort: function (err: Error): void {
-				console.error(err);
-				server.close();
-			},
-			remoteAddr: this.remoteMultiaddr,
-			timeline: {
-				open: Date.now(),
-			},
-			log: this.log,
-			source: new WsSource(this.server),
-			sink: async (source) => {
-				for await (const message of source) {
-					this.server.send(message.slice());
-				}
-			},
-		};
-		try {
-			init.upgrader
-				.upgradeInbound(maConn)
-				.then((conn) => {
-					this.log('inbound connection %s upgraded', this.remoteAddr);
-					if (init?.handler != null) {
-						init?.handler(conn);
+		const self = this;
+		if (self.server) {
+			const server = self.server;
+			const maConn: MultiaddrConnection = {
+				close: function (_options?: AbortOptions): Promise<void> {
+					server.close();
+					return Promise.resolve();
+				},
+				abort: function (err: Error): void {
+					console.error(err);
+					server.close();
+				},
+				remoteAddr: this.remoteMultiaddr,
+				timeline: {
+					open: Date.now(),
+				},
+				log: this.log,
+				source: new WsSource(server),
+				sink: async (source) => {
+					for await (const message of source) {
+						server.send(message.slice());
 					}
+				},
+			};
+			try {
+				init.upgrader
+					.upgradeInbound(maConn)
+					.then((conn) => {
+						this.log('inbound connection %s upgraded', this.remoteAddr);
+						if (init?.handler != null) {
+							init?.handler(conn);
+						}
 
-					this.dispatchEvent(
-						new CustomEvent<Connection>('connection', {
-							detail: conn,
-						}),
-					);
-				})
-				.catch(async (err) => {
-					this.log.error('Inbound connection failed to upgrade', err);
-					await maConn.close().catch((err) => {
-						this.log.error('inbound connection failed to close', err);
+						this.dispatchEvent(
+							new CustomEvent<Connection>('connection', {
+								detail: conn,
+							}),
+						);
+					})
+					.catch(async (err) => {
+						this.log.error('Inbound connection failed to upgrade', err);
+						await maConn.close().catch((err) => {
+							this.log.error('inbound connection failed to close', err);
+						});
 					});
+			} catch (err) {
+				this.log.error('Inbound connection failed to upgrade', err);
+				maConn.close().catch((err) => {
+					this.log.error('inbound connection failed to close', err);
 				});
-		} catch (err) {
-			this.log.error('Inbound connection failed to upgrade', err);
-			maConn.close().catch((err) => {
-				this.log.error('inbound connection failed to close', err);
-			});
+			}
 		}
 	}
 	getAddrs(): Multiaddr[] {
 		return [this.myMultiaddr];
 	}
 	close(): Promise<void> {
-		this.server.close();
+		this.server?.close();
 		return Promise.resolve();
 	}
 
 	listen(_multiaddr: Multiaddr): Promise<void> {
 		console.log('listening');
-		this.server.accept();
+		this.server?.accept();
 		return Promise.resolve();
 	}
 }

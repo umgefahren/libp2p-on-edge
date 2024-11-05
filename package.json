@@ -35,9 +35,8 @@
     "interface-datastore": "^8.3.1",
     "interface-store": "^6.0.2",
     "it-stream-types": "^2.0.2",
-    "it-ws": "^6.1.5",
+    "itty-router": "^5.0.18",
     "libp2p": "^2.2.1",
-    "p-defer": "^4.0.1",
     "progress-events": "^1.0.1",
     "race-signal": "^1.1.0",
     "wherearewe": "^2.0.1"
