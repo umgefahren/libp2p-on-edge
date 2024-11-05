@@ -1,10 +1,14 @@
-import { transportSymbol, serviceCapabilities, ConnectionFailedError } from '@libp2p/interface';
-import { multiaddrToUri as toUri } from '@multiformats/multiaddr-to-uri';
-import { CustomProgressEvent } from 'progress-events';
-import { raceSignal } from 'race-signal';
-import { isBrowser, isWebWorker } from 'wherearewe';
-import * as filters from './filters.js';
-import { createListener, WsSource } from './listener.js';
+import {
+	transportSymbol,
+	serviceCapabilities,
+	ConnectionFailedError,
+} from '@libp2p/interface'
+import { multiaddrToUri as toUri } from '@multiformats/multiaddr-to-uri'
+import { CustomProgressEvent } from 'progress-events'
+import { raceSignal } from 'race-signal'
+import { isBrowser, isWebWorker } from 'wherearewe'
+import * as filters from './filters.js'
+import { createListener, WsSource } from './listener.js'
 import type {
 	Transport,
 	MultiaddrFilter,
@@ -19,62 +23,67 @@ import type {
 	Metrics,
 	CounterGroup,
 	MultiaddrConnection,
-} from '@libp2p/interface';
-import type { Multiaddr } from '@multiformats/multiaddr';
-import type { ProgressEvent } from 'progress-events';
+} from '@libp2p/interface'
+import type { Multiaddr } from '@multiformats/multiaddr'
+import type { ProgressEvent } from 'progress-events'
 
 export interface WebSocketsInit extends AbortOptions {
-	filter?: MultiaddrFilter;
-	server?: WebSocket;
-	workerMultiaddr: string;
-	remoteAddr: string;
+	filter?: MultiaddrFilter
+	server?: WebSocket
+	workerMultiaddr: string
+	remoteAddr: string
 	websocket?: {
-		protocol: string;
-	};
+		protocol: string
+	}
 }
 
 export interface WebSocketsComponents {
-	logger: ComponentLogger;
-	metrics?: Metrics;
+	logger: ComponentLogger
+	metrics?: Metrics
 }
 
 export interface WebSocketsMetrics {
-	dialerEvents: CounterGroup;
+	dialerEvents: CounterGroup
 }
 
-export type WebSocketsDialEvents = OutboundConnectionUpgradeEvents | ProgressEvent<'websockets:open-connection'>;
+export type WebSocketsDialEvents =
+	| OutboundConnectionUpgradeEvents
+	| ProgressEvent<'websockets:open-connection'>
 
 class WebSockets implements Transport<WebSocketsDialEvents> {
-	private readonly log: Logger;
-	private readonly init: WebSocketsInit;
-	private readonly logger: ComponentLogger;
-	private readonly components: WebSocketsComponents;
+	private readonly log: Logger
+	private readonly init: WebSocketsInit
+	private readonly logger: ComponentLogger
+	private readonly components: WebSocketsComponents
 
 	constructor(components: WebSocketsComponents, init?: WebSocketsInit) {
-		this.components = components;
-		this.log = this.components.logger.forComponent('libp2p:websockets');
-		this.logger = this.components.logger;
+		this.components = components
+		this.log = this.components.logger.forComponent('libp2p:websockets')
+		this.logger = this.components.logger
 		if (init == null) {
-			throw new Error('missing init options');
+			throw new Error('missing init options')
 		}
-		this.init = init;
+		this.init = init
 	}
 
-	readonly [transportSymbol] = true;
+	readonly [transportSymbol] = true
 
-	readonly [Symbol.toStringTag] = '@libp2p/websockets';
+	readonly [Symbol.toStringTag] = '@libp2p/websockets'
 
-	readonly [serviceCapabilities]: string[] = ['@libp2p/transport'];
+	readonly [serviceCapabilities]: string[] = ['@libp2p/transport']
 
-	async dial(ma: Multiaddr, options: DialTransportOptions<WebSocketsDialEvents>): Promise<Connection> {
-		this.log('dialing %s', ma);
-		options = options ?? {};
-		const maConn = await createWebSocket(ma, this.init, this.log, options);
-		this.log('new outbound connection %s', maConn.remoteAddr);
+	async dial(
+		ma: Multiaddr,
+		options: DialTransportOptions<WebSocketsDialEvents>
+	): Promise<Connection> {
+		this.log('dialing %s', ma)
+		options = options ?? {}
+		const maConn = await createWebSocket(ma, this.init, this.log, options)
+		this.log('new outbound connection %s', maConn.remoteAddr)
 
-		const conn = await options.upgrader.upgradeOutbound(maConn, options);
-		this.log('outbound connection %s upgraded', maConn.remoteAddr);
-		return conn;
+		const conn = await options.upgrader.upgradeOutbound(maConn, options)
+		this.log('outbound connection %s upgraded', maConn.remoteAddr)
+		return conn
 	}
 
 	/**
@@ -90,8 +99,8 @@ class WebSockets implements Transport<WebSocketsDialEvents> {
 			{
 				...this.init,
 				...options,
-			},
-		);
+			}
+		)
 	}
 
 	/**
@@ -100,25 +109,25 @@ class WebSockets implements Transport<WebSocketsDialEvents> {
 	 * while in a Node.js environment DNS+{WS, WSS} multiaddrs are accepted.
 	 */
 	listenFilter(multiaddrs: Multiaddr[]): Multiaddr[] {
-		multiaddrs = Array.isArray(multiaddrs) ? multiaddrs : [multiaddrs];
+		multiaddrs = Array.isArray(multiaddrs) ? multiaddrs : [multiaddrs]
 
 		if (this.init?.filter != null) {
-			return this.init?.filter(multiaddrs);
+			return this.init?.filter(multiaddrs)
 		}
 
 		// Browser
 		if (isBrowser || isWebWorker) {
-			return filters.wss(multiaddrs);
+			return filters.wss(multiaddrs)
 		}
 
-		return filters.all(multiaddrs);
+		return filters.all(multiaddrs)
 	}
 
 	/**
 	 * Filter check for all Multiaddrs that this transport can dial
 	 */
 	dialFilter(multiaddrs: Multiaddr[]): Multiaddr[] {
-		return this.listenFilter(multiaddrs);
+		return this.listenFilter(multiaddrs)
 	}
 }
 
@@ -126,67 +135,79 @@ async function createWebSocket(
 	ma: Multiaddr,
 	init: WebSocketsInit,
 	logger: Logger,
-	options: DialTransportOptions<WebSocketsDialEvents>,
+	options: DialTransportOptions<WebSocketsDialEvents>
 ): Promise<MultiaddrConnection> {
-	const uri = toUri(ma);
+	const uri = toUri(ma)
 
-	const socket = new WebSocket(uri, init.websocket?.protocol);
+	const socket = new WebSocket(uri, init.websocket?.protocol)
 
-	const source = new WsSource(socket);
+	const source = new WsSource(socket)
 
 	const errorPromise = new Promise((_resolve, reject) => {
 		socket.addEventListener('error', () => {
-			const err = new ConnectionFailedError(`Could not connect to ${ma.toString()}`);
-			logger.error('connection error:', err);
-			reject(err);
-		});
-	});
+			const err = new ConnectionFailedError(
+				`Could not connect to ${ma.toString()}`
+			)
+			logger.error('connection error:', err)
+			reject(err)
+		})
+	})
 
 	const connectedPromise = new Promise<void>((resolve) => {
 		socket.addEventListener('open', () => {
-			resolve();
-		});
-	});
+			resolve()
+		})
+	})
 
 	try {
-		options.onProgress?.(new CustomProgressEvent('websockets:open-connection'));
-		await raceSignal(Promise.race([connectedPromise, errorPromise]), options.signal);
+		options.onProgress?.(
+			new CustomProgressEvent('websockets:open-connection')
+		)
+		await raceSignal(
+			Promise.race([connectedPromise, errorPromise]),
+			options.signal
+		)
 	} catch (err: any) {
-		socket.close();
+		socket.close()
 
-		throw err;
+		throw err
 	}
 
 	return {
 		sink: async (source) => {
 			for await (const message of source) {
-				socket.send(message.slice());
+				socket.send(message.slice())
 			}
 		},
 		source,
 		close: async () => {
-			if (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN) {
+			if (
+				socket.readyState === WebSocket.CONNECTING ||
+				socket.readyState === WebSocket.OPEN
+			) {
 				await new Promise<void>((resolve) => {
 					socket.addEventListener('close', () => {
-						resolve();
-					});
-					socket.close();
-				});
+						resolve()
+					})
+					socket.close()
+				})
 			}
 		},
 		abort: () => {
-			socket.close();
+			socket.close()
 		},
 		remoteAddr: ma,
 		timeline: {
 			open: Date.now(),
 		},
 		log: logger,
-	};
+	}
 }
 
-export function webSockets(init: WebSocketsInit): (components: WebSocketsComponents) => Transport {
+export function webSockets(
+	init: WebSocketsInit
+): (components: WebSocketsComponents) => Transport {
 	return (components) => {
-		return new WebSockets(components, init);
-	};
+		return new WebSockets(components, init)
+	}
 }
