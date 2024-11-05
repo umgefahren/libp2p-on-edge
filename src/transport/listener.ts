@@ -1,5 +1,4 @@
 import {
-	AbortOptions,
 	ComponentLogger,
 	Connection,
 	CreateListenerOptions,
@@ -22,8 +21,8 @@ export interface WebSocketListenerInit extends CreateListenerOptions {
 
 export class WsSource implements AsyncGenerator<Uint8Array> {
 	constructor(private readonly socket: WebSocket) {}
-	next(...[_value]: [] | [any]): Promise<IteratorResult<Uint8Array, any>> {
-		return new Promise((resolve, _reject) => {
+	next(): Promise<IteratorResult<Uint8Array, void>> {
+		return new Promise((resolve) => {
 			this.socket.addEventListener('message', (event) => {
 				resolve({
 					value: new Uint8Array(event.data as ArrayBuffer),
@@ -32,13 +31,13 @@ export class WsSource implements AsyncGenerator<Uint8Array> {
 			})
 		})
 	}
-	return(_value: any): Promise<IteratorResult<Uint8Array, any>> {
+	return(): Promise<IteratorResult<Uint8Array>> {
 		return Promise.resolve({ value: new Uint8Array(), done: true })
 	}
-	throw(e: any): Promise<IteratorResult<Uint8Array, any>> {
+	throw<E>(e: E): Promise<IteratorResult<Uint8Array, E>> {
 		return Promise.reject(e)
 	}
-	[Symbol.asyncIterator](): AsyncGenerator<Uint8Array, any, any> {
+	[Symbol.asyncIterator](): AsyncGenerator<Uint8Array> {
 		return this
 	}
 }
@@ -65,11 +64,11 @@ export class WsListener
 		this.server = server
 		this.log = components.logger.forComponent('libp2p:websockets:listener')
 
-		const self = this
+		const self = this // eslint-disable-line @typescript-eslint/no-this-alias
 		if (self.server) {
 			const server = self.server
 			const maConn: MultiaddrConnection = {
-				close: function (_options?: AbortOptions): Promise<void> {
+				close: function (): Promise<void> {
 					server.close()
 					return Promise.resolve()
 				},
@@ -135,8 +134,8 @@ export class WsListener
 		return Promise.resolve()
 	}
 
-	listen(_multiaddr: Multiaddr): Promise<void> {
-		console.log('listening')
+	listen(multiaddr: Multiaddr): Promise<void> {
+		console.log('listening on', multiaddr)
 		this.server?.accept()
 		return Promise.resolve()
 	}

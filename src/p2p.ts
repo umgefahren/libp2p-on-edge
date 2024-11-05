@@ -13,7 +13,6 @@ import { webSockets } from './transport'
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
 import { bootstrap } from '@libp2p/bootstrap'
-import { all } from './transport/filters'
 
 const bootstrapMultiaddrs = [
 	'/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
@@ -139,10 +138,10 @@ export class P2pStack {
 			],
 			logger: {
 				forComponent(name) {
-					const debug = (...args: any[]) => console.log(name, ...args)
+					const debug = (...args: any[]) => console.log(name, ...args) // eslint-disable-line @typescript-eslint/no-explicit-any
 					return Object.assign(debug, {
-						error: (...args: any[]) => console.error(name, ...args),
-						trace: (...args: any[]) => console.trace(name, ...args),
+						error: (...args: any[]) => console.error(name, ...args), // eslint-disable-line @typescript-eslint/no-explicit-any
+						trace: (...args: any[]) => console.trace(name, ...args), // eslint-disable-line @typescript-eslint/no-explicit-any
 						enabled: true,
 					})
 				},

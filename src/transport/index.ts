@@ -167,7 +167,7 @@ async function createWebSocket(
 			Promise.race([connectedPromise, errorPromise]),
 			options.signal
 		)
-	} catch (err: any) {
+	} catch (err) {
 		socket.close()
 
 		throw err

@@ -7,21 +7,17 @@ export class CloudflareDatastore extends BaseDatastore {
 		super()
 	}
 
-	override async has(key: Key, _options?: AbortOptions): Promise<boolean> {
+	override async has(key: Key): Promise<boolean> {
 		const res = await this.namespace.get(key.toString())
 		return res !== null
 	}
 
-	override async put(
-		key: Key,
-		val: Uint8Array,
-		_options?: AbortOptions
-	): Promise<Key> {
+	override async put(key: Key, val: Uint8Array): Promise<Key> {
 		await this.namespace.put(key.toString(), val)
 		return key
 	}
 
-	override async get(key: Key, _options?: AbortOptions): Promise<Uint8Array> {
+	override async get(key: Key): Promise<Uint8Array> {
 		const value = await this.namespace.get(key.toString(), 'arrayBuffer')
 		if (value === null) {
 			throw new NotFoundError('Not found')
@@ -29,7 +25,7 @@ export class CloudflareDatastore extends BaseDatastore {
 		return new Uint8Array(value)
 	}
 
-	override async delete(key: Key, _options?: AbortOptions): Promise<void> {
+	override async delete(key: Key): Promise<void> {
 		await this.namespace.delete(key.toString())
 	}
 
@@ -57,7 +53,7 @@ export class CloudflareDatastore extends BaseDatastore {
 
 	override _allKeys(q: KeyQuery, options?: AbortOptions): AwaitIterable<Key> {
 		console.log('doing an all keys', options)
-		const self = this
+		const self = this // eslint-disable-line @typescript-eslint/no-this-alias
 		return {
 			[Symbol.asyncIterator]: async function* () {
 				const offset = q.offset
@@ -80,7 +76,7 @@ export class CloudflareDatastore extends BaseDatastore {
 
 	override _all(q: Query, options?: AbortOptions): AwaitIterable<Pair> {
 		console.log('doing an all', options)
-		const self = this
+		const self = this // eslint-disable-line @typescript-eslint/no-this-alias
 		return {
 			[Symbol.asyncIterator]: async function* () {
 				const offset = q.offset
