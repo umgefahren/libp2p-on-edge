@@ -1,5 +1,6 @@
 {
 	"name": "libp2p-on-edge",
+	"packageManager": "pnpm@9",
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
@@ -9,6 +10,7 @@
 		"test": "vitest",
 		"cf-typegen": "wrangler types",
 		"format": "prettier --write .",
+		"format:check": "prettier --check .",
 		"lint": "eslint .",
 		"ts-check": "tsc --noEmit"
 	},
