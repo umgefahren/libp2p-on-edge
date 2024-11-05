@@ -1,6 +1,6 @@
 {
 	"name": "libp2p-on-edge",
-	"packageManager": "pnpm@9.*.*",
+	"packageManager": "pnpm@9.12.3",
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
