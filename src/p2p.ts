@@ -15,7 +15,7 @@ const bootstrapMultiaddrs = [
 	'/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
 ];
 
-function base64ToUint8Array(base64: string): Uint8Array {
+export function base64ToUint8Array(base64: string): Uint8Array {
 	const binString = atob(base64);
 	return Uint8Array.from(binString, (char) => char.charCodeAt(0));
 }

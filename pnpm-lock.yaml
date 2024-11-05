@@ -29,6 +29,9 @@ importers:
       '@libp2p/kad-dht':
         specifier: ^14.1.0
         version: 14.1.0
+      '@libp2p/peer-id':
+        specifier: ^5.0.7
+        version: 5.0.7
       '@libp2p/peer-store':
         specifier: ^11.0.10
         version: 11.0.10

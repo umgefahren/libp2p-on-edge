@@ -1,5 +1,7 @@
-import { P2pStack } from './p2p';
+import { generateKeyPairFromSeed } from '@libp2p/crypto/keys';
+import { base64ToUint8Array, P2pStack } from './p2p';
 import { error, IRequestStrict, json, Router, withParams } from 'itty-router';
+import { peerIdFromPrivateKey } from '@libp2p/peer-id';
 
 async function handleWsRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const webSocketPair = new WebSocketPair();
@@ -75,6 +77,11 @@ async function apiHandler(request: Request, env: Env, ctx: ExecutionContext): Pr
 			await stack.waitForStart();
 			const resp = await stack.kad.closestPeers(key);
 			return new Response(JSON.stringify(resp));
+		})
+		.get('/api/v1/peer-id', async () => {
+			const privateKey = await generateKeyPairFromSeed('Ed25519', base64ToUint8Array(env.SECRET_KEY_SEED));
+			const peerId = peerIdFromPrivateKey(privateKey);
+			return new Response(JSON.stringify({ peerId: peerId.toString() }));
 		});
 
 	return await router.fetch(request);
